@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+# psycopg2-binary
+# psycopg2
+pydantic
+alembic
+python-dotenv
+pymssql
