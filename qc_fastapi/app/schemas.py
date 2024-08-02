@@ -22,7 +22,7 @@ class Process(BaseModel):
     process_name: str
     class Config:
         from_attributes = True
-
+        
 ###### Calibration #######
 class Calibration(BaseModel):
     instrument_no: str
@@ -31,4 +31,3 @@ class Calibration(BaseModel):
     calibration_no:str
     class Config:
         from_attributes = True
-

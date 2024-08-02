@@ -25,5 +25,5 @@ class Calibration(Base):
     instrument_no = Column(String(50),primary_key=True,index=True)  
     instrument_name = Column(String(50)) 
     exp_date = Column(DateTime)
-    calibration_no = Column(String(50)) 
+    calibration_no = Column(String(50))
     
