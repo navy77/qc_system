@@ -7,14 +7,19 @@ class Specification(Base):
     spec_id = Column(String(50),primary_key=True, index=True)  
     process = Column(String(50))  
     part_no = Column(String(50))
-    item = Column(Integer)
-    spec_name = Column(String(50))
-    spec = Column(Float)
-    spec_max = Column(Float)
-    spec_min = Column(Float)
+    item_no = Column(Integer)
+    item_check = Column(String(50))
+    spec_nominal = Column(Float)
+    tolerance_max = Column(Float)
+    tolerance_min = Column(Float)
     point = Column(Integer)
     method = Column(Integer)
-    
+
+class Process(Base):
+    __tablename__ = "process"
+    process_id = Column(String(20),primary_key=True,index=True)
+    process_name = Column(String(50))
+
 # class Measure(Base):
 #     __tablename__ = "measure"
 #     id = Column(Integer, primary_key=True, index=True)
