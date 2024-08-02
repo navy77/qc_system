@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .database import engine
 from . import models
-from .routers import specification,process
+from .routers import specification,process,calibration
 from fastapi.middleware.cors import CORSMiddleware
 
 models.Base.metadata.create_all(bind=engine)
@@ -10,7 +10,7 @@ app = FastAPI()
 
 app.include_router(specification.router, prefix="/specification", tags=["specification"])
 app.include_router(process.router, prefix="/process", tags=["process"])
-# app.include_router(calibration.router, prefix="/calibration", tags=["calibration"])
+app.include_router(calibration.router, prefix="/calibration", tags=["calibration"])
 
 origins = [
     "http://localhost:3000",  

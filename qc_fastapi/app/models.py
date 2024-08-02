@@ -20,25 +20,10 @@ class Process(Base):
     process_id = Column(String(20),primary_key=True,index=True)
     process_name = Column(String(50))
 
-# class Measure(Base):
-#     __tablename__ = "measure"
-#     id = Column(Integer, primary_key=True, index=True)
-#     spec_id = Column(String(50), ForeignKey("specification.spec_id"), index=True)  
-#     measure_time = Column(DateTime)
-#     model = Column(String(100)) 
-#     lot_no = Column(String(100))  
-#     machine_no = Column(String(100))
-#     instrument_no = Column(String(100))
-#     spec = Column(Float)
-#     spec_max = Column(Float)
-#     spec_min = Column(Float)
-#     value = Column(Float)
-#     judgment = Column(String(100))  
-#     employee = Column(String(100))  
-
-# class Calibration(Base):
-#     __tablename__ = "calibration"
-#     instrument_no = Column(String(50))  
-#     instrument_name = Column(String(100)) 
-#     exp_date = Column(DateTime)
-    # calibration_no = Column(String(100)) 
+class Calibration(Base):
+    __tablename__ = "calibration"
+    instrument_no = Column(String(50),primary_key=True,index=True)  
+    instrument_name = Column(String(50)) 
+    exp_date = Column(DateTime)
+    calibration_no = Column(String(50)) 
+    
