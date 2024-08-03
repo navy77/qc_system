@@ -1,5 +1,4 @@
 import paho.mqtt.client as mqtt
-from pymongo import MongoClient
 import json
 import os
 from dotenv import load_dotenv
