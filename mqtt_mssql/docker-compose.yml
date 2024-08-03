@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+
+  mqtt_return:
+    build: .
+    container_name: mqtt_return
+    volumes:
+      - .:/app
+    restart: always
+
+
