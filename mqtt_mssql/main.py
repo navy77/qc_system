@@ -45,7 +45,7 @@ def query(part_no, process):
     finally:
         conn.close()
     
-    field_names = ['spec_id', 'process', 'part_no', 'item_no', 'spec_name', 'spec', 'spec_max', 'spec_min', 'point', 'method']
+    field_names = ['spec_id', 'process', 'part_no', 'item_no', 'item_check', 'spec_nominal', 'tolerance_max', 'tolerance_min', 'point', 'method']
     dict_data = [dict(zip(field_names, item)) for item in results]
     json_data = json.dumps(dict_data, indent=4)
 

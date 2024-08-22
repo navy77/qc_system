@@ -14,7 +14,7 @@ app.include_router(calibration.router, prefix="/calibration", tags=["calibration
 
 origins = [
     "http://localhost:3000",  
-    "http://localhost:8000",  
+    "http://localhost:8000", 
 ]
 
 app.add_middleware(
