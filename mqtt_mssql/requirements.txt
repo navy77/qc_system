@@ -1,3 +1,4 @@
 paho-mqtt==1.6.1
 pymssql
 python-dotenv
+pandas==2.2.2
