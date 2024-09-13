@@ -3,7 +3,7 @@ import json
 import os
 from dotenv import load_dotenv
 import pymssql
-
+import pandas as pd
 # Load environment variables
 load_dotenv()
 
@@ -24,32 +24,34 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     topic_rtn = f"{msg.topic}_rtn"
     payload = json.loads(msg.payload.decode())
-    
+
     if isinstance(payload, dict):
         spec_id = payload.get("spec_id")
         if spec_id:
             publish(client, topic_rtn, spec_id)
-    else:
-        print("Payload is not a dictionary")
+    # else:
+    #     print("Payload is not a dictionary")
 
 def query(part_no, process):
-    conn = pymssql.connect(server=server, user=username, password=password, database=database)
-    cursor = conn.cursor()
-    query = f"SELECT * FROM {table} WHERE part_no = '{part_no}' and process = '{process}'"
     try:
+        conn = pymssql.connect(server=server, user=username, password=password, database=database)
+        cursor = conn.cursor(as_dict=True)
+
+        query = f"SELECT * FROM {table} WHERE part_no = '{part_no}' and process = '{process}'"
         cursor.execute(query)
         results = cursor.fetchall()
+        conn.close()
+
+        if results:
+            df = pd.DataFrame(results)
+            df['part_no_item'] = df['part_no']+"-"+df['item_no'].astype(str)
+            df = df.loc[df.groupby('part_no_item')['rev'].idxmax()]
+            df.drop(columns=['part_no_item','register','rev'],inplace=True)
+            json_data = df.to_json(orient='records')
+            return json_data
     except pymssql.Error as e:
         print(f"Error querying MSSQL: {e}")
         return None
-    finally:
-        conn.close()
-    
-    field_names = ['spec_id', 'process', 'part_no', 'item_no', 'item_check', 'spec_nominal', 'tolerance_max', 'tolerance_min', 'point', 'method']
-    dict_data = [dict(zip(field_names, item)) for item in results]
-    json_data = json.dumps(dict_data, indent=4)
-
-    return json_data
 
 def publish(client, topic, spec_id):
     part_no, process = spec_id.split('_')
