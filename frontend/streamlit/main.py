@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from influxdb import InfluxDBClient
 from datetime import datetime
+import numpy as np
 
 def preview_sqlserver(server, user_login, password, database, table):
     try:
@@ -39,22 +40,23 @@ def preview_sqlserver(server, user_login, password, database, table):
         st.error(f'Error: {str(e)}', icon="❌")
     st.markdown("---")
 
-def preview_influx(st,influx_server,influx_user_login,influx_password,influx_database,column_names,mqtt_topic) :
+def preview_influx(st,influx_server,influx_user_login,influx_password,influx_database,column,mqtt_topic) :
       try:
-            result_lists = []
-            client = InfluxDBClient(influx_server, 8086,influx_user_login,influx_password,influx_database)
-            # print(mqtt_topic.split('/')[0])
-            # if mqtt_topic.split('/')[0] =='data':
-            query = f"select * from mqtt_consumer where topic = '{mqtt_topic}' order by time desc limit 5"
+            client = InfluxDBClient(influx_server,8086,influx_user_login,influx_password,influx_database)
+            query = f"select {column} from mqtt_consumer where topic =~ /{mqtt_topic}*/ order by time desc limit 5"
             result = client.query(query)
-            if list(result):
-                query_list = list(result)[0]
-                df = pd.DataFrame(query_list)
-                df.time = pd.to_datetime(df.time).dt.tz_convert('Asia/Bangkok')
-                st.dataframe(df, use_container_width=True, hide_index=True)
+            result_df = pd.DataFrame(result.get_points())
+            if not result_df.empty:
+                df = result_df.copy()
+                df_split = df['topic'].str.split('/', expand=True)
+                df['equipment_no'] = df_split[2].values
+                df["time"] =   pd.to_datetime(df["time"]).dt.tz_convert(None)
+                df["time"] = df["time"] + pd.DateOffset(hours=7)
+                df["time"] = df['time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+                df.drop(columns={'topic'},inplace=True)
             else:
                 st.error('Error: influx no data', icon="❌")
-
+            st.dataframe(df, use_container_width=True, hide_index=True)
       except Exception as e:
           st.error('Error: '+str(e), icon="❌")
 
@@ -169,7 +171,6 @@ def config_master_spec():
                 spec_id = str(part_no)+"-"+str(process)+"-"+str(item_no)+"-"+str(rev)
                 insert_to_db(spec_id,part_no,rev, process, item_no, item_check, spec_nominal, tolerance_max, tolerance_min, method, point, register)
                 
-
 def main_layout():
     st.set_page_config(
             page_title="QC System",
@@ -188,6 +189,14 @@ def main_layout():
         
         with tab1:
             st.write("Monitor data")
+            part_no_selectbox = st.selectbox(
+                "Select part_no",
+                ("a","b","c"),
+                index = None,
+                key = 'part)no'
+            )
+            chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
+            st.line_chart(chart_data)
         with tab2:
             st.write("Master Configulation")
             config_master_spec()
@@ -196,7 +205,7 @@ def main_layout():
             config_db_connect("SQLSERVER")
             config_db_connect("INFLUXDB")
         with tab4:
-            st.write("MSSQL Data Preview")
+            st.write("Master Spec Preview")
             preview_sqlserver(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["SQL_TABLE"])
             st.write("INFLUX Data Preview")
             preview_influx(st,os.environ["INFLUX_SERVER"],os.environ["INFLUX_USER_LOGIN"],os.environ["INFLUX_PASSWORD"],os.environ["INFLUX_DATABASE"],os.environ["INFLUX_COLUMN"],os.environ["MQTT_TOPIC"])

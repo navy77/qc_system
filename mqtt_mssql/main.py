@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import pymssql
 import pandas as pd
-# Load environment variables
+
 load_dotenv()
 
 username = os.getenv('USER_LOGIN')
@@ -29,8 +29,7 @@ def on_message(client, userdata, msg):
         spec_id = payload.get("spec_id")
         if spec_id:
             publish(client, topic_rtn, spec_id)
-    # else:
-    #     print("Payload is not a dictionary")
+
 
 def query(part_no, process):
     try:
