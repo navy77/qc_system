@@ -232,33 +232,26 @@ def monitor_chart():
 
         col1,col2,col3,col4,col5,col6 = st.columns(6)
         with col1:
-            part_no_selectbox = st.selectbox(
-                "Select part_no",
-                (part_no),
-                index = None,
-                key = 'part_no'
-            )
+            if part_no:
+                part_no_selectbox = st.selectbox("Select part_no",(part_no),index = None,key = 'part_no')
+            else:
+                st.markdown("No data")
+
         with col2:
-            itemcheck_selectbox = st.selectbox(
-                "Select item check",
-                (item_check),
-                index = None,
-                key = 'item_check'
-            )
+            if item_check:
+                itemcheck_selectbox = st.selectbox("Select item check",(item_check),index = None,key = 'item_check')
+            else:
+                st.markdown("No data")
         with col3:
-            process_selectbox = st.selectbox(
-                "Select process",
-                (process),
-                index = None,
-                key = 'process'
-            )
+            if process:
+                process_selectbox = st.selectbox("Select process",(process),index = None, key = 'process')
+            else:
+                st.markdown("No data")
         with col4:
-            equipment_selectbox = st.selectbox(
-                "Select equipment",
-                (equipment_no),
-                index = None,
-                key = 'equipment_no'
-            )
+            if equipment_no:
+                equipment_selectbox = st.selectbox("Select equipment",(equipment_no),index = None,key = 'equipment_no')
+            else:
+                st.markdown("No data")
         with col5:
             stdate_selectbox = st.date_input("Select start date" ,value = None)
         with col6:
@@ -315,6 +308,10 @@ def get_selectbox(server,user_login,password,database,table):
             process = df['process'].drop_duplicates()
             equipment = df['equipment_no'].drop_duplicates()
             return part_no,item_check,process,equipment
+        else:
+            part_no,item_check,process,equipment = None,None,None,None
+            return part_no,item_check,process,equipment
+        
     except Exception as e:
         st.error(f'Error: {str(e)}', icon="❌")
 
