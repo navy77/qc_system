@@ -31,12 +31,13 @@ def on_message(client, userdata, msg):
             publish(client, topic_rtn, spec_id)
 
 
-def query(part_no, process):
+def query(part_no, process,item_no,rev):
     try:
         conn = pymssql.connect(server=server, user=username, password=password, database=database)
         cursor = conn.cursor(as_dict=True)
 
-        query = f"SELECT * FROM {table} WHERE part_no = '{part_no}' and process = '{process}'"
+        query = f"SELECT * FROM {table} WHERE part_no = '{part_no}' and process = '{process}' and item_no = {item_no} and rev = {rev}"
+
         cursor.execute(query)
         results = cursor.fetchall()
         conn.close()
@@ -48,18 +49,22 @@ def query(part_no, process):
             df.drop(columns=['part_no_item','register','rev'],inplace=True)
             json_data = df.to_json(orient='records')
             return json_data
+        
     except pymssql.Error as e:
         print(f"Error querying MSSQL: {e}")
         return None
 
 def publish(client, topic, spec_id):
-    part_no, process = spec_id.split('_')
-    query_data = query(part_no, process)
+    if len(spec_id.split('_')) == 4:
+        part_no, process,item_no,rev = spec_id.split('_')
+        query_data = query(part_no, process,item_no,rev)
 
-    if query_data:
-        client.publish(topic, query_data)
+        if query_data:
+            client.publish(topic, query_data)
+        else:
+            print(f"No data found for spec_id: {spec_id}")
     else:
-        print(f"No data found for spec_id: {spec_id}")
+        print(f"Check data spec_id : {spec_id}")
 
 def main():
     client = mqtt.Client()

@@ -1,15 +1,20 @@
 pip install -r requirements.txt
 
 # mssql 
-database = qc_demo
-table = spec_tb
+database = qc_system
+table = master_spec
 #script 
-CREATE TABLE spec_tb (
+CREATE TABLE master_spec (
     spec_id varchar(10),
-    spec_name varchar(50),
-    point int,
+    part_no varchar(10),
+    rev int,
+    process varchar(10),
+    item_no int,
+    item_check varchar(10),
+    spec_nominal float,
+    tolerance_max float,
+    tolerance_min float,
     method int,
-    spec float,
-	spec_min float,
-	spec_max float,
+    point int,
+    register datatime
 );

@@ -152,7 +152,7 @@ class MEASURE(PREPARE):
         col_list = insert_db_value
         cnxn,cursor=self.conn_sql()
         try:
-            if not self.df_insert is None:  
+            if not self.df_insert is None:
                 df = self.df_insert
                 df = df[col_list]
                 for index, row in df.iterrows():

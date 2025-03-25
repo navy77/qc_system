@@ -3,6 +3,7 @@ services:
 
   mqtt_return:
     build: .
+    image: "mic/mqtt_return:1.0.0"
     container_name: mqtt_return
     volumes:
       - .:/app
