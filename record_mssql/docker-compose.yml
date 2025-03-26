@@ -1,37 +1,37 @@
 
 services:
-  qc_app:
-    build:
-      context: .  
-      dockerfile: Dockerfile
-    environment:
-      - TZ=Asia/Bangkok
-    image: "mic/qc_app:1.0.0"
-    container_name: 'streamlit${NO}'
-    privileged: true
-    volumes:
-      - ./telegraf.conf:/app/telegraf.conf
-      - ./config.ini:/app/config.ini
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./.env:/app/.env
-    ports:
-      - '${ST_PORT}:8501'
-    env_file:
-      - .env
-    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+  # qc_app:
+  #   build:
+  #     context: .  
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - TZ=Asia/Bangkok
+  #   image: "mic/qc_app:1.0.0"
+  #   container_name: 'streamlit${NO}'
+  #   privileged: true
+  #   volumes:
+  #     - ./telegraf.conf:/app/telegraf.conf
+  #     - ./config.ini:/app/config.ini
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./.env:/app/.env
+  #   ports:
+  #     - '${ST_PORT}:8501'
+  #   env_file:
+  #     - .env
+  #   command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 
-  qc_data:
-    image: "mic/qc_app:1.0.0"
-    container_name: 'qc_data${NO}'
-    privileged: true
-    volumes:
-      - ./utils/.env:/app/utils/.env
-      - ./.env:/app/.env
-    env_file:
-      - .env
-    environment:
-      - TZ=Asia/Bangkok
-    command: ["python", "main_qc.py"]
+  # qc_data:
+  #   image: "mic/qc_app:1.0.0"
+  #   container_name: 'qc_data${NO}'
+  #   privileged: true
+  #   volumes:
+  #     - ./utils/.env:/app/utils/.env
+  #     - ./.env:/app/.env
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - TZ=Asia/Bangkok
+  #   command: ["python", "main_qc.py"]
     
   telegraf_mms:
     image: telegraf

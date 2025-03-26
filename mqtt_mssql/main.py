@@ -30,7 +30,6 @@ def on_message(client, userdata, msg):
         if spec_id:
             publish(client, topic_rtn, spec_id)
 
-
 def query(part_no, process,item_no,rev):
     try:
         conn = pymssql.connect(server=server, user=username, password=password, database=database)
@@ -46,7 +45,7 @@ def query(part_no, process,item_no,rev):
             df = pd.DataFrame(results)
             df['part_no_item'] = df['part_no']+"-"+df['item_no'].astype(str)
             df = df.loc[df.groupby('part_no_item')['rev'].idxmax()]
-            df.drop(columns=['part_no_item','register','rev'],inplace=True)
+            df.drop(columns=['part_no_item','register'],inplace=True)
             json_data = df.to_json(orient='records')
             return json_data
         

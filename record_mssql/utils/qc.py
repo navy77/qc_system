@@ -183,6 +183,7 @@ class MEASURE(PREPARE):
                             """
                         cursor.execute(insert_string)
                         cnxn.commit()
+                        time.sleep(0.02)
                     cursor.close()
                     self.df_insert = None
                     # update time
@@ -203,7 +204,7 @@ class MEASURE(PREPARE):
                 self.edit_col()
                 time.sleep(1)
                 self.df_to_db()
-                print(self.df_insert)
+
                 self.ok_msg(self.df_to_db.__name__)
         else:
             print("db is not initial yet")
