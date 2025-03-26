@@ -11,11 +11,11 @@ username = os.getenv('USER_LOGIN')
 password = os.getenv('PASSWORD')
 database = os.getenv('DATABASE')
 server = os.getenv('SERVER')
-table = os.getenv('TABLE')
+table = os.getenv('MASTER_SPEC_TABLE')
 
 mqtt_broker = os.getenv('MQTT_BROKER')
 mqtt_port = int(os.getenv('MQTT_PORT'))
-mqtt_topic = os.getenv('MQTT_TOPIC')
+mqtt_topic = os.getenv('MQTT_TOPIC_SUB')
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
@@ -24,7 +24,6 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     topic_rtn = f"{msg.topic}_rtn"
     payload = json.loads(msg.payload.decode())
-
     if isinstance(payload, dict):
         spec_id = payload.get("spec_id")
         if spec_id:
@@ -36,7 +35,7 @@ def query(part_no, process,item_no,rev):
         cursor = conn.cursor(as_dict=True)
 
         query = f"SELECT * FROM {table} WHERE part_no = '{part_no}' and process = '{process}' and item_no = {item_no} and rev = {rev}"
-
+        print(query)
         cursor.execute(query)
         results = cursor.fetchall()
         conn.close()
@@ -57,7 +56,7 @@ def publish(client, topic, spec_id):
     if len(spec_id.split('_')) == 4:
         part_no, process,item_no,rev = spec_id.split('_')
         query_data = query(part_no, process,item_no,rev)
-
+        print(query_data)
         if query_data:
             client.publish(topic, query_data)
         else:

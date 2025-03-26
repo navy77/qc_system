@@ -10,9 +10,9 @@ try:
         database=os.getenv('DATABASE'),
         user_login=os.getenv('USER_LOGIN'),
         password=os.getenv('PASSWORD'),
-        table=os.getenv('TABLE_1'),
+        table=os.getenv('TABLE'),
         table_columns=os.getenv('QC_COLUMN_NAMES'),
-        table_log=os.getenv('TABLE_LOG_1'),
+        table_log=os.getenv('TABLE_LOG'),
         table_columns_log=os.getenv('QC_TABLE_COLUMNS_LOG'),
         influx_server=os.getenv('INFLUX_SERVER'),
         influx_database=os.getenv('INFLUX_DATABASE'),
@@ -20,7 +20,7 @@ try:
         influx_password=os.getenv('INFLUX_PASSWORD'),
         influx_port=os.getenv('INFLUX_PORT'),
         column_names=os.getenv('MCSTATUS_TABLE_COLUMNS'),
-        mqtt_topic=os.getenv('MQTT_TOPIC_1'),
+        mqtt_topic=os.getenv('MQTT_TOPIC'),
         initial_db=os.getenv('INIT_DB'))
     qc_to_sqlserver.run()
 

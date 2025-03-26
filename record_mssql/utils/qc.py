@@ -111,13 +111,14 @@ class MEASURE(PREPARE):
 
             for i in range(len(mqtt_topic_value)):
                 query = f"select topic,{self.table_columns} from mqtt_consumer where topic ='{mqtt_topic_value[i]}' order by time desc limit 20"
-  
                 result = client.query(query)
                 result_df = pd.DataFrame(result.get_points())
                 result_lists.append(result_df)
             query_influx = pd.concat(result_lists, ignore_index=True)
-
+    
             query_influx = query_influx.sort_values(by='time',ascending=False)
+            query_influx = query_influx[~query_influx['topic'].str.contains('_rtn')]
+
             query_influx["time"] =   pd.to_datetime(query_influx["time"]).dt.tz_convert(None)
             query_influx["time"] = query_influx["time"] + pd.DateOffset(hours=7)    
             query_influx["time"] = query_influx['time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
@@ -144,9 +145,9 @@ class MEASURE(PREPARE):
     def edit_col(self):
         try:
             df = self.df_influx.copy()
-            df_split = df['topic'].str.split('/', expand=True)
-            df['equipment_no'] = df_split[3].values
-            df['process'] = df_split[2].values
+            # df_split = df['topic'].str.split('/', expand=True)
+            # # df['equipment_no'] = df_split[3].values
+            # df['process'] = df_split[2].values
             
             df.drop(columns=['topic'],inplace=True)
             df.rename(columns = {'time':'occurred'}, inplace = True)
@@ -172,7 +173,7 @@ class MEASURE(PREPARE):
                             address = col_list[i]
                             if value == None:
                                 value = ",'"+str(row[address])+"'"
-                            else:
+                            else: 
                                 value = value+",'"+str(row[address])+"'"
                         insert_string = f"""
                         INSERT INTO [{self.database}].[dbo].[{self.table}] 
@@ -198,13 +199,14 @@ class MEASURE(PREPARE):
 
     def run(self):
         self.stamp_time()
+
         if self.initial_db == 'True':
             self.query_influx()
             if self.df_influx is not None:
                 self.edit_col()
                 time.sleep(1)
                 self.df_to_db()
-
+                print(self.df_insert)
                 self.ok_msg(self.df_to_db.__name__)
         else:
             print("db is not initial yet")

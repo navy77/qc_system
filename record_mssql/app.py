@@ -19,7 +19,7 @@ def preview_master_sqlserver(server, user_login, password, database, table):
         cnxn.close()
         if data:
             df = pd.DataFrame(data)
-            df = df.drop_duplicates(subset=['item_check'],keep='first')
+            df = df.drop_duplicates(subset=['item_name'],keep='first')
             for col in df.columns:
                 if df[col].dtype == 'object': 
                     try:
@@ -58,14 +58,11 @@ def preview_production_sqlserver(server,user_login,password,database,table,spec_
 def preview_influx(st,influx_server,influx_port,influx_user_login,influx_password,influx_database,column_names,spec_id) :
       try:
             client = InfluxDBClient(influx_server,influx_port,influx_user_login,influx_password,influx_database)
-
             query = f"SELECT time, topic, {column_names} FROM mqtt_consumer WHERE spec_id = '{spec_id}' AND topic !~ /_rtn/ order by time desc limit 5"
-
             result = client.query(query)
             if list(result):
                 query_list = list(result)[0]
                 df = pd.DataFrame(query_list)
-
                 df.time = pd.to_datetime(df.time).dt.tz_convert('Asia/Bangkok')
                 st.dataframe(df,width=1500)
             else:
@@ -141,16 +138,16 @@ def get_db_connection():
     )
     return conn
 
-def insert_to_db(spec_id,part_no,rev, process, item_no, item_check, spec_nominal, tolerance_max, tolerance_min, method, point,register):
+def insert_to_db(spec_id,part_no,rev, process, item_no, item_name, spec_nominal, tolerance_max, tolerance_min, method, point,register):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
-            """
-            INSERT INTO master_spec (spec_id,part_no,rev,process, item_no, item_check, spec_nominal, tolerance_max, tolerance_min, method, point,register) 
+            f"""
+            INSERT INTO {os.environ["MASTER_SPEC_TABLE"]} (spec_id,part_no,rev,process, item_no, item_name, spec_nominal, tolerance_max, tolerance_min, method, point,register) 
             VALUES (%s,%s,%d,%s,%d,%s,%d,%s,%s,%d,%d,%s)
             """,
-            (spec_id,part_no,rev,process,item_no, item_check, spec_nominal, tolerance_max, tolerance_min, method, point,register)
+            (spec_id,part_no,rev,process,item_no, item_name, spec_nominal, tolerance_max, tolerance_min, method, point,register)
         )
         conn.commit()
         st.success("Data inserted successfully!")
@@ -171,9 +168,9 @@ def config_master_spec():
             st.markdown("""<h3 style='text-align: center;'>Master Spec Input</h3>""", unsafe_allow_html=True)
             part_no = st.text_input("part_no").upper()
             rev = st.number_input("rev",step=1,min_value=1)
-            process = st.text_input("process")
+            process = st.text_input("process").upper()
             item_no = st.number_input("item_no", min_value=1)
-            item_check = st.text_input("item_check").upper()
+            item_name = st.text_input("item_name").upper()
             spec_nominal = st.number_input("spec_nominal",step=0.001,format="%0.3f")
             tolerance_max = st.number_input("tolerance_max",step=0.001,format="%0.3f")
             tolerance_min = st.number_input("tolerance_min",step=0.001,format="%0.3f")
@@ -184,12 +181,15 @@ def config_master_spec():
             with button_col3:
                 submit_button = st.form_submit_button(label="Submit")
 
-            if submit_button:
-                register = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                spec_id = str(part_no)+"_"+str(process)+"_"+str(item_no)+"_"+str(rev)
-
-                insert_spec_id = insert_to_db(spec_id,part_no,rev, process, item_no, item_check, spec_nominal, tolerance_max, tolerance_min, method, point, register)
-
+            if submit_button: 
+                if (part_no=="") or (rev=="") or (process=="") or (item_no==""):
+                    st.error('Data missing', icon="❌")
+                    insert_spec_id = 0
+                else:
+                    register = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    spec_id = str(part_no)+"_"+str(process)+"_"+str(item_no)+"_"+str(rev)
+                    insert_spec_id = insert_to_db(spec_id,part_no,rev, process, item_no, item_name, spec_nominal, tolerance_max, tolerance_min, method, point, register)
+                 
     with col2:
         if (submit_button == 1) and  (insert_spec_id == 1):
             # Create and generate the QR code
@@ -208,7 +208,7 @@ def config_master_spec():
 def monitor_chart():
     st.write("Monitor data")
     with st.form("chart_form"):
-        part_no,item_check,process,equipment_no = get_selectbox(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_1"])
+        part_no,item_name,process,equipment_no = get_selectbox(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"])
 
         col1,col2,col3,col4,col5,col6 = st.columns(6)
         with col1:
@@ -218,8 +218,8 @@ def monitor_chart():
                 st.markdown("No data")
 
         with col2:
-            if item_check:
-                itemcheck_selectbox = st.selectbox("Select item check",(item_check),index = None,key = 'item_check')
+            if item_name:
+                itemcheck_selectbox = st.selectbox("Select item check",(item_name),index = None,key = 'item_name')
             else:
                 st.markdown("No data")
         with col3:
@@ -240,11 +240,11 @@ def monitor_chart():
         if submit:
             chart_data(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_1"],part_no_selectbox,itemcheck_selectbox,process_selectbox,equipment_selectbox,stdate_selectbox,fndate_selectbox)
 
-def chart_data(server,user_login,password,database,table,part_no,item_check,process,equipment,stdate,fndate):
+def chart_data(server,user_login,password,database,table,part_no,item_name,process,equipment,stdate,fndate):
     try:
         cnxn = pymssql.connect(server, user_login, password, database)
         cursor = cnxn.cursor(as_dict=True)
-        query = f"SELECT * FROM {table} WHERE time BETWEEN '{stdate}' AND '{fndate}' AND part_no = '{part_no}' AND item_check = '{item_check}' AND process = '{process}' AND equipment_no = '{equipment}'"
+        query = f"SELECT * FROM {table} WHERE time BETWEEN '{stdate}' AND '{fndate}' AND part_no = '{part_no}' AND item_name = '{item_name}' AND process = '{process}' AND equipment_no = '{equipment}'"
         cursor.execute(query)
 
         data = cursor.fetchall()
@@ -275,58 +275,59 @@ def chart_data(server,user_login,password,database,table,part_no,item_check,proc
 
 def dataflow_production_influx():
         st.caption("INFLUXDB")
-        cnxn = pymssql.connect(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"])
-        cursor = cnxn.cursor(as_dict=True)
-        cursor.execute(f'''SELECT TOP(5) * FROM {os.environ["MASTER_SPEC_TABLE"]}  order by register desc''')
+        conn = get_db_connection()
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(f'''SELECT * FROM {os.environ["MASTER_SPEC_TABLE"]}  order by register desc''')
         data = cursor.fetchall()
+
         cursor.close()
-        cnxn.close()
+        conn.close()
         if data:
             df = pd.DataFrame(data)
-            df = df.drop_duplicates(subset=['item_check'],keep='first')
+            df = df.drop_duplicates(subset=['item_name'],keep='first')
             df = df[['spec_id']]
 
-        preview_influx_selectbox = st.selectbox(
-                "mqtt topic",
-                df,
-                index=None,
-                placeholder="select topic...",
-                key='preview_influx'
-                    )
-        if preview_influx_selectbox:
-            preview_influx_but = st.button("QUERY",key="preview_influx_but")
+            preview_influx_selectbox = st.selectbox(
+                    "spec_id",
+                    df,
+                    index=None,
+                    placeholder="select topic...",
+                    key='preview_influx'
+                        )
+            if preview_influx_selectbox:
+                preview_influx_but = st.button("QUERY",key="preview_influx_but")
 
-            if preview_influx_but:
-                spec_id  = preview_influx_selectbox
-                preview_influx(st,os.environ["INFLUX_SERVER"],os.environ["INFLUX_PORT"],os.environ["INFLUX_USER_LOGIN"],os.environ["INFLUX_PASSWORD"],os.environ["INFLUX_DATABASE"],os.environ["QC_COLUMN_NAMES"],spec_id)
+                if preview_influx_but:
+                    spec_id  = preview_influx_selectbox
+                    preview_influx(st,os.environ["INFLUX_SERVER"],os.environ["INFLUX_PORT"],os.environ["INFLUX_USER_LOGIN"],os.environ["INFLUX_PASSWORD"],os.environ["INFLUX_DATABASE"],os.environ["QC_COLUMN_NAMES"],spec_id)
         st.markdown("---")
 
 def dataflow_production_sql():
         st.caption("SQLSERVER")
-        cnxn = pymssql.connect(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"])
-        cursor = cnxn.cursor(as_dict=True)
+        conn = get_db_connection()
+        cursor = conn.cursor(as_dict=True)
         cursor.execute(f'''SELECT TOP(5) * FROM {os.environ["MASTER_SPEC_TABLE"]}  order by register desc''')
         data = cursor.fetchall()
         cursor.close()
-        cnxn.close()
+        conn.close()
         if data:
             df = pd.DataFrame(data)
-            df = df.drop_duplicates(subset=['item_check'],keep='first')
+            df = df.drop_duplicates(subset=['item_name'],keep='first')
             df = df[['spec_id']]
 
-        preview_sqlserver_selectbox = st.selectbox(
-                "mqtt topic",
-                df,
-                index=None,
-                placeholder="select topic...",
-                key='preview_sqlserver'
-                    )
-        if preview_sqlserver_selectbox:
-            preview_sqlserver_but = st.button("QUERY",key="preview_sqlserver_but")
-        
-            if preview_sqlserver_but:
-                spec_id  = preview_sqlserver_selectbox
-                preview_production_sqlserver(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_1"],spec_id)
+            preview_sqlserver_selectbox = st.selectbox(
+                    "mqtt topic",
+                    df,
+                    index=None,
+                    placeholder="select topic...",
+                    key='preview_sqlserver'
+                        )
+            if preview_sqlserver_selectbox:
+                preview_sqlserver_but = st.button("QUERY",key="preview_sqlserver_but")
+            
+                if preview_sqlserver_but:
+                    spec_id  = preview_sqlserver_selectbox
+                    preview_production_sqlserver(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"],spec_id)
         st.markdown("---")
 
 def main_layout():
@@ -342,7 +343,7 @@ def main_layout():
         text_input_container = st.empty()
         password = text_input_container.text_input("Input password", type="password")
 
-    if password == "1":
+    if password == os.environ["ST_PASSWORD_1"]:
         text_input_container.empty()
         tab1, tab2,tab3,tab4  = st.tabs(["📝 Dashboard", "⚙️ Project Configulation","🔑 DB Connection","🔍 Data Preview"])
         
@@ -352,6 +353,7 @@ def main_layout():
 
         with tab2:
             st.write("Master Configulation")
+            pass
             config_master_spec()
         with tab3:
             st.write("DB Connection")
@@ -359,6 +361,7 @@ def main_layout():
             config_db_connect("INFLUXDB")
         with tab4:
             st.write("Master Spec Preview")
+            pass
             preview_master_sqlserver(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["MASTER_SPEC_TABLE"])
             dataflow_production_influx()
             dataflow_production_sql()
